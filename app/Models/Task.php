@@ -6,13 +6,38 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Spatie\Activitylog\Traits\LogsActivity;
+use Spatie\Activitylog\LogOptions;
 
 class Task extends Model
 {
+    use LogsActivity;
     protected $fillable = [
-        'project_id','creator_id','assignee_id','title','description',
-        'priority','progress','due_date','completed_at','status'
+        'project_id',
+        'creator_id',
+        'assignee_id',
+        'title',
+        'description',
+        'priority',
+        'progress',
+        'due_date',
+        'completed_at',
+        'status',
     ];
+
+    protected $casts = [
+        'due_date' => 'date',
+        'completed_at' => 'datetime',
+        'progress' => 'integer',
+    ];
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logOnly(['title', 'description', 'status', 'priority', 'progress', 'due_date', 'assignee_id'])
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs();
+    }
 
     /**
      * @return BelongsTo

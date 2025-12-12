@@ -83,4 +83,6 @@ return [
         'enabled' => true,
     ],
 
+    'register_role_permission_resources' => true,
+
 ];

@@ -2,15 +2,16 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\Widgets\OverdueTasksWidget;
+use App\Filament\Widgets\TasksChartWidget;
+use App\Filament\Widgets\TasksOverviewWidget;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
-use Filament\Pages;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
-use Filament\Widgets;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
@@ -18,6 +19,8 @@ use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 use Saade\FilamentFullCalendar\FilamentFullCalendarPlugin;
+use Awcodes\Curator\CuratorPlugin;
+use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -33,16 +36,21 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
-            ->pages([
-                Pages\Dashboard::class,
-            ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
             ->widgets([
-                Widgets\AccountWidget::class,
-                Widgets\FilamentInfoWidget::class,
+                TasksOverviewWidget::class,
+                TasksChartWidget::class,
+                OverdueTasksWidget::class,
             ])
             ->plugins([
-                FilamentFullCalendarPlugin::make()
+                FilamentFullCalendarPlugin::make(),
+                FilamentShieldPlugin::make(),
+                CuratorPlugin::make()
+                    ->label('Quản lý Media')
+                    ->pluralLabel('Quản lý Media')
+                    ->navigationIcon('heroicon-o-photo')
+                    ->navigationGroup('Hệ thống')
+                    ->navigationSort(20),
             ])
             ->middleware([
                 EncryptCookies::class,
