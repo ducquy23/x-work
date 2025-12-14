@@ -30,7 +30,7 @@ Hoặc tạo trực tiếp trong database:
 ### 3. Gán quyền cho User
 
 Sau khi đăng nhập vào hệ thống tại `/admin`, bạn có thể:
-- Vào menu **Shield** → **Roles** để quản lý vai trò
+- Vào menu **Roles** để quản lý vai trò
 - Vào menu **Người dùng** để gán vai trò cho từng user
 
 ## 📁 CẤU TRÚC HỆ THỐNG
@@ -235,4 +235,5 @@ php artisan db:seed
 ---
 
 **Chúc bạn sử dụng hệ thống hiệu quả! 🚀**
+
 
