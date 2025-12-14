@@ -29,6 +29,29 @@ class ProjectResource extends Resource
 
     protected static ?int $navigationSort = 4;
 
+    public static function getEloquentQuery(): Builder
+    {
+        $query = parent::getEloquentQuery();
+        /** @var \App\Models\User|null $user */
+        $user = auth()->user();
+        
+        if (!$user) {
+            return $query->whereRaw('1 = 0'); // Không có user thì không hiển thị gì
+        }
+        
+        // Chủ tịch và Ban điều hành xem tất cả
+        if ($user->hasRole('chu-tich') || $user->hasRole('ban-dieu-hanh')) {
+            return $query;
+        }
+        
+        // Giám đốc DA, Trưởng phòng và Nhân viên chỉ xem dự án của phòng ban mình
+        if ($user->hasRole('giam-doc-da') || $user->hasRole('truong-phong') || $user->hasRole('nhan-vien')) {
+            return $query->where('department_id', $user->department_id);
+        }
+        
+        return $query;
+    }
+
     public static function form(Form $form): Form
     {
         return $form

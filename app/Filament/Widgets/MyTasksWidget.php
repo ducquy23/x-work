@@ -22,7 +22,10 @@ class MyTasksWidget extends BaseWidget
         return $table
             ->query(
                 Task::query()
-                    ->where('assignee_id', auth()->id())
+                    ->whereHas('assignees', function($q) {
+                        $q->where('user_id', auth()->id());
+                    })
+                    ->orWhere('creator_id', auth()->id())
                     ->orderBy('due_date', 'asc')
             )
             ->columns([

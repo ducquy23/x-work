@@ -18,7 +18,8 @@ class DepartmentPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->can('view_any_department');
+        // Tất cả users đều có thể xem danh sách phòng ban
+        return $user->can('view_any_department') || $user->can('view_department');
     }
 
     /**
@@ -30,7 +31,13 @@ class DepartmentPolicy
      */
     public function view(User $user, Department $department): bool
     {
-        return $user->can('view_department');
+        // Chủ tịch và Ban điều hành xem tất cả
+        if ($user->hasRole('chu-tich') || $user->hasRole('ban-dieu-hanh')) {
+            return $user->can('view_department');
+        }
+        
+        // Các roles khác chỉ xem phòng ban của mình
+        return $user->department_id === $department->id && $user->can('view_department');
     }
 
     /**
@@ -41,7 +48,9 @@ class DepartmentPolicy
      */
     public function create(User $user): bool
     {
-        return $user->can('create_department');
+        // Chỉ Chủ tịch và Ban điều hành mới có thể tạo phòng ban
+        return ($user->hasRole('chu-tich') || $user->hasRole('ban-dieu-hanh')) 
+            && $user->can('create_department');
     }
 
     /**
@@ -53,7 +62,9 @@ class DepartmentPolicy
      */
     public function update(User $user, Department $department): bool
     {
-        return $user->can('update_department');
+        // Chỉ Chủ tịch và Ban điều hành mới có thể sửa phòng ban
+        return ($user->hasRole('chu-tich') || $user->hasRole('ban-dieu-hanh')) 
+            && $user->can('update_department');
     }
 
     /**
@@ -65,7 +76,8 @@ class DepartmentPolicy
      */
     public function delete(User $user, Department $department): bool
     {
-        return $user->can('delete_department');
+        // Chỉ Chủ tịch mới có thể xóa phòng ban
+        return $user->hasRole('chu-tich') && $user->can('delete_department');
     }
 
     /**

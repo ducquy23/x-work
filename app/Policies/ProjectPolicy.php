@@ -18,7 +18,13 @@ class ProjectPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->can('view_any_project');
+        // Chủ tịch và Ban điều hành xem tất cả
+        if ($user->hasRole('chu-tich') || $user->hasRole('ban-dieu-hanh')) {
+            return $user->can('view_any_project');
+        }
+        
+        // Các roles khác đều có thể xem (sẽ filter trong query)
+        return $user->can('view_any_project') || $user->can('view_project');
     }
 
     /**
@@ -30,7 +36,22 @@ class ProjectPolicy
      */
     public function view(User $user, Project $project): bool
     {
-        return $user->can('view_project');
+        // Chủ tịch và Ban điều hành xem tất cả
+        if ($user->hasRole('chu-tich') || $user->hasRole('ban-dieu-hanh')) {
+            return $user->can('view_project');
+        }
+        
+        // Giám đốc DA và Trưởng phòng xem dự án của phòng ban mình
+        if ($user->hasRole('giam-doc-da') || $user->hasRole('truong-phong')) {
+            return $project->department_id === $user->department_id && $user->can('view_project');
+        }
+        
+        // Nhân viên xem dự án của phòng ban mình
+        if ($user->hasRole('nhan-vien')) {
+            return $project->department_id === $user->department_id && $user->can('view_project');
+        }
+        
+        return false;
     }
 
     /**
@@ -53,7 +74,17 @@ class ProjectPolicy
      */
     public function update(User $user, Project $project): bool
     {
-        return $user->can('update_project');
+        // Chủ tịch và Ban điều hành sửa tất cả
+        if ($user->hasRole('chu-tich') || $user->hasRole('ban-dieu-hanh')) {
+            return $user->can('update_project');
+        }
+        
+        // Giám đốc DA và Trưởng phòng sửa dự án của phòng ban mình
+        if ($user->hasRole('giam-doc-da') || $user->hasRole('truong-phong')) {
+            return $project->department_id === $user->department_id && $user->can('update_project');
+        }
+        
+        return false;
     }
 
     /**
@@ -65,7 +96,17 @@ class ProjectPolicy
      */
     public function delete(User $user, Project $project): bool
     {
-        return $user->can('delete_project');
+        // Chỉ Chủ tịch, Ban điều hành, Giám đốc DA và Trưởng phòng mới có thể xóa
+        if ($user->hasRole('chu-tich') || $user->hasRole('ban-dieu-hanh')) {
+            return $user->can('delete_project');
+        }
+        
+        // Giám đốc DA và Trưởng phòng xóa dự án của phòng ban mình
+        if ($user->hasRole('giam-doc-da') || $user->hasRole('truong-phong')) {
+            return $project->department_id === $user->department_id && $user->can('delete_project');
+        }
+        
+        return false;
     }
 
     /**

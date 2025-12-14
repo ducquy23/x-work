@@ -30,6 +30,60 @@ class TaskResource extends Resource
 
     protected static ?int $navigationSort = 5;
 
+    public static function getEloquentQuery(): Builder
+    {
+        $query = parent::getEloquentQuery();
+        /** @var \App\Models\User|null $user */
+        $user = auth()->user();
+        
+        if (!$user) {
+            return $query->whereRaw('1 = 0'); // Không có user thì không hiển thị gì
+        }
+        
+        // Chủ tịch và Ban điều hành xem tất cả
+        if ($user->hasRole('chu-tich') || $user->hasRole('ban-dieu-hanh')) {
+            return $query;
+        }
+        
+        // Giám đốc DA xem công việc của dự án thuộc phòng ban mình
+        if ($user->hasRole('giam-doc-da')) {
+            return $query->whereHas('project', function($q) use ($user) {
+                $q->where('department_id', $user->department_id);
+            })->orWhereNull('project_id'); // Hoặc công việc không thuộc dự án nào
+        }
+        
+        // Trưởng phòng xem công việc của phòng ban mình
+        if ($user->hasRole('truong-phong')) {
+            return $query->where(function($q) use ($user) {
+                // Công việc được giao cho nhân viên trong phòng ban
+                $q->whereHas('assignees', function($subQ) use ($user) {
+                    $subQ->whereHas('department', function($deptQ) use ($user) {
+                        $deptQ->where('id', $user->department_id);
+                    });
+                })
+                // Hoặc công việc của dự án thuộc phòng ban
+                ->orWhereHas('project', function($subQ) use ($user) {
+                    $subQ->where('department_id', $user->department_id);
+                })
+                // Hoặc công việc được tạo bởi nhân viên trong phòng ban
+                ->orWhereHas('creator', function($subQ) use ($user) {
+                    $subQ->where('department_id', $user->department_id);
+                });
+            });
+        }
+        
+        // Nhân viên chỉ xem công việc được giao cho mình hoặc mình tạo
+        if ($user->hasRole('nhan-vien')) {
+            return $query->where(function($q) use ($user) {
+                $q->whereHas('assignees', function($subQ) use ($user) {
+                    $subQ->where('user_id', $user->id);
+                })->orWhere('creator_id', $user->id);
+            });
+        }
+        
+        return $query;
+    }
+
     public static function form(Form $form): Form
     {
         return $form
@@ -50,12 +104,21 @@ class TaskResource extends Resource
                             ->relationship('project', 'name')
                             ->searchable()
                             ->preload(),
-                        Forms\Components\Select::make('assignee_id')
+                        Forms\Components\Select::make('assignees')
                             ->label('Người được giao')
+                            ->relationship('assignees', 'name')
+                            ->multiple()
+                            ->searchable()
+                            ->preload()
+                            ->required()
+                            ->helperText('Có thể chọn nhiều người để giao việc'),
+                        Forms\Components\Select::make('assignee_id')
+                            ->label('Người được giao (cũ - để tương thích)')
                             ->relationship('assignee', 'name')
                             ->searchable()
                             ->preload()
-                            ->required(),
+                            ->visible(fn ($record) => $record && $record->assignee_id)
+                            ->disabled(),
                         Forms\Components\Select::make('priority')
                             ->label('Độ ưu tiên')
                             ->options([
@@ -115,10 +178,12 @@ class TaskResource extends Resource
                     ->label('Dự án')
                     ->sortable()
                     ->searchable(),
-                Tables\Columns\TextColumn::make('assignee.name')
+                Tables\Columns\TextColumn::make('assignees.name')
                     ->label('Người được giao')
-                    ->sortable()
-                    ->searchable(),
+                    ->badge()
+                    ->separator(',')
+                    ->searchable()
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('priority')
                     ->label('Ưu tiên')
                     ->badge()
